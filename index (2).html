@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dra. Luna y la Misión Bebé</title>
+<style>
+:root{--bg:#ffe9f1;--tx:#3a2342;--card:#fff;--ac:#ff5c8a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a1730;--tx:#fff4fa;--card:#3d2347}}
+:root[data-theme="dark"]{--bg:#2a1730;--tx:#fff4fa;--card:#3d2347}
+*{box-sizing:border-box}html,body{margin:0;height:100%}body{background:var(--bg);color:var(--tx);font-family:"Trebuchet MS",Verdana,sans-serif;display:flex;justify-content:center;align-items:center}
+#g{position:relative;width:min(100vw,66vh,440px);aspect-ratio:2/3;border-radius:22px;overflow:hidden;box-shadow:0 8px 30px #0004;touch-action:none;user-select:none}
+canvas{width:100%;height:100%;display:block}
+#hud{position:absolute;top:6px;left:8px;right:8px;display:flex;justify-content:space-between;font-weight:900;font-size:clamp(14px,4vw,20px);color:#3a2342;text-shadow:0 2px 0 #fff;pointer-events:none}
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;text-align:center;background:#ffffffb0}
+#ov.b{justify-content:flex-end;background:none}
+.p{background:var(--card);color:var(--tx);border-radius:20px;padding:16px;width:100%;box-shadow:0 4px 0 #0002}
+h1,h2{margin:.2em 0;font-size:clamp(22px,6vw,30px);color:var(--ac)}p{margin:.4em 0}
+button{font:inherit;font-weight:900;background:var(--ac);color:#fff;border:0;border-radius:16px;padding:12px 20px;margin:5px 0;font-size:clamp(16px,4.4vw,20px);box-shadow:0 5px 0 #c23a62;cursor:pointer;width:100%}
+button.o{background:#6c5ce7;box-shadow:0 5px 0 #4b3fb8}button:active{transform:translateY(4px);box-shadow:0 1px 0}
+#mu{position:absolute;bottom:6px;right:6px;width:auto;padding:4px 10px;margin:0;z-index:3;font-size:16px}
+</style></head><body>
+<div id="g"><canvas id="c" width="400" height="600"></canvas><div id="hud"><span id="h1"></span><span id="h2"></span></div><div id="ov"></div><button id="mu">🔊</button></div>
+<script>
+const $=i=>document.getElementById(i),C=$("c"),x=C.getContext("2d"),O=$("ov");
+let A=null,mute=false,sc="menu",score=0,lives=3,items=[],dx=200,tm=0,sp=0,pops=[],mood=1,beats=[],hits=0,miss=0,nb=0,lastB=0,qi=0,qok=0,res={a:0,b:0,c:0},conf=[],T=0;
+function ini(){if(!A){try{A=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(A&&A.state=="suspended")A.resume()}
+function tn(f,d,ty,v,at){if(!A||mute)return;const o=A.createOscillator(),g=A.createGain(),t=A.currentTime+(at||0);o.type=ty||"sine";o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v||.15,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(A.destination);o.start(t);o.stop(t+d+.05)}
+const pop=()=>{tn(700,.1,"sine",.2);tn(1100,.12,"sine",.15,.07)},boing=()=>{tn(300,.25,"sawtooth",.12);tn(150,.3,"square",.08,.1)},thump=()=>{tn(80,.12,"sine",.4);tn(60,.1,"sine",.3,.17)},win=()=>[523,659,784,1047].forEach((f,i)=>tn(f,.3,"triangle",.2,i*.12));
+const SC=[523,587,659,784,880,784,659,587];let ni=0;setInterval(()=>{if(sc=="menu"||sc=="l1"||sc=="q"||sc=="end"){tn(SC[ni++%8]*(sc=="l1"?1:.5),.25,"triangle",.04)}},320);
+$("mu").onclick=()=>{mute=!mute;$("mu").textContent=mute?"🔇":"🔊"};
+function ov(h,b){O.className=b?"b":"";O.style.display=h?"flex":"none";O.innerHTML=h}
+function hud(a,b){$("h1").textContent=a||"";$("h2").textContent=b||""}
+// ---- personajes cartoon ----
+function circ(px,py,r,c,st){x.fillStyle=c;x.beginPath();x.arc(px,py,r,0,7);x.fill();if(st){x.strokeStyle="#3a2342";x.lineWidth=3;x.stroke()}}
+function face(m,ey){circ(-10,ey,7,"#fff",1);circ(10,ey,7,"#fff",1);circ(-9,ey+1,3.5,"#2d1b1b");circ(11,ey+1,3.5,"#2d1b1b");circ(-18,ey+11,5,"#ff9db8");circ(18,ey+11,5,"#ff9db8");x.strokeStyle="#7a2a3a";x.lineWidth=3;x.beginPath();if(m)x.arc(0,ey+10,9,.15*Math.PI,.85*Math.PI);else x.arc(0,ey+22,8,1.15*Math.PI,1.85*Math.PI);x.stroke()}
+function doc(px,py,s,m,bob){x.save();x.translate(px,py+Math.sin(T*6)*(bob||0));x.scale(s,s);
+x.fillStyle="#fff";x.strokeStyle="#3a2342";x.lineWidth=3;x.beginPath();x.ellipse(0,52,32,40,0,0,7);x.fill();x.stroke();
+x.fillStyle="#2ec4b6";x.beginPath();x.moveTo(-14,22);x.lineTo(14,22);x.lineTo(0,50);x.fill();
+x.strokeStyle="#555";x.lineWidth=4;x.beginPath();x.arc(0,26,15,0,Math.PI);x.stroke();circ(0,46,6,"#aaa",1);
+circ(0,-44,13,"#6b3a1e",1);circ(0,-8,30,"#f2c29b",1);x.fillStyle="#6b3a1e";x.beginPath();x.arc(0,-12,31,Math.PI,0);x.fill();x.strokeStyle="#3a2342";x.stroke();
+face(m,-6);x.restore()}
+function mama(px,py,s,m){x.save();x.translate(px,py);x.scale(s,s);
+x.fillStyle="#ff8fb1";x.strokeStyle="#3a2342";x.lineWidth=3;x.beginPath();x.ellipse(0,60,38,48,0,0,7);x.fill();x.stroke();
+circ(0,72,30,"#ffb3cb",1);circ(0,-6,30,"#f5cfa6",1);circ(-30,10,12,"#2b1a14",1);circ(30,10,12,"#2b1a14",1);x.fillStyle="#2b1a14";x.beginPath();x.arc(0,-10,31,Math.PI,0);x.fill();x.stroke();face(m,-4);x.restore()}
+function baby(px,py,s){x.save();x.translate(px,py);x.scale(s,s);circ(0,25,22,"#a5d8ff",1);circ(0,-6,24,"#f7d1b0",1);x.fillStyle="#2b1a14";x.beginPath();x.arc(0,-24,6,0,7);x.fill();face(1,-4);x.restore()}
+function bg(){const g=x.createLinearGradient(0,0,0,600);g.addColorStop(0,"#bfe9ff");g.addColorStop(1,"#fff0f6");x.fillStyle=g;x.fillRect(0,0,400,600);x.fillStyle="#fff";[[60,90],[250,60],[330,140]].forEach(([a,b],i)=>{const o=Math.sin(T+i)*10;[0,22,44].forEach(d=>circ(a+o+d,b,20,"#fff"))});x.fillStyle="#9be39a";x.fillRect(0,560,400,40);x.fillStyle="#7acb7a";for(let i=0;i<8;i++)circ(i*60+20,560,18,"#7acb7a")}
+function txt(t,px,py,sz,c){x.font="900 "+sz+"px Trebuchet MS,sans-serif";x.textAlign="center";x.lineWidth=5;x.strokeStyle="#fff";x.strokeText(t,px,py);x.fillStyle=c||"#3a2342";x.fillText(t,px,py)}
+// ---- menu ----
+function menu(){sc="menu";hud();items=[];ov('<div class="p"><h1>Dra. Luna y la Misión Bebé 🍼</h1><p>¡Ayuda a la doctora Luna a cuidar a mamá y a su bebé! 3 juegos divertidos.</p><button onclick="ini();l1i()">▶ ¡Jugar!</button></div>')}
+// ---- nivel 1 ----
+const GOOD=["🥦","🥚","🍎","🥛","🐟","🥕","🍊"],BAD=["🍬","🍭","🚬","🍺","🍟"];
+function l1i(){ini();ov('<div class="p"><h2>Nivel 1: ¡Comida sana!</h2><p>Atrapa las comidas ricas en hierro y ácido fólico 🥦🥚🍎 y esquiva 🍬🚬🍺. ¡Mueve a la doctora con el dedo o el mouse!</p><button onclick="l1()">¡Listo!</button></div>')}
+function l1(){ov("");sc="l1";score=0;lives=3;items=[];sp=0;pops=[];mood=1;hud("⭐ 0/10","❤️❤️❤️")}
+// ---- nivel 2 ----
+function l2i(){ov('<div class="p"><h2>Nivel 2: ¡Late-late! 💓</h2><p>Toca la pantalla justo cuando el anillo rosa llegue al círculo blanco. ¡Sigue el latido del bebé!</p><button onclick="l2()">¡Listo!</button></div>')}
+function l2(){ov("");sc="l2";beats=[];hits=0;miss=0;nb=0;lastB=performance.now()-1000;mood=1;hud("💓 0","")}
+// ---- quiz ----
+const Q=[["Mamá llega con dolor de cabeza fuerte, ve lucecitas y tiene la presión alta. ¿Qué hace la doctora?",["Dormir un ratito","Atenderla de inmediato en el hospital","Darle un dulce"],1],["¿Cómo saludamos a mamá?",["«Hola, soy la Dra. Luna. ¿Cómo te sientes hoy?»","«Dame tu carnet»","No la miramos"],0],["¿Qué vitamina ayuda a que el bebé crezca sano?",["Ácido fólico","Más azúcar","Refresco"],0],["¡Mamá sangra mucho después del parto! ¿Qué hacemos?",["Esperar","Activar Código Rojo y pedir ayuda","Irnos a comer"],1],["¿Cuál es el latido normal del bebé?",["30 a 60","110 a 160 por minuto","250 a 300"],1],["Cuando el bebé nace, ¿qué le damos a mamá?",["Piel con piel y un abrazo","Dejarlo solo","Ponerlo en la balanza lejos"],0]];
+function qi0(){sc="q";qi=0;qok=0;hud("📘 Quiz","");mood=1;qs()}
+function qs(){if(qi>=Q.length){res.c=qok;return fin()}const q=Q[qi];ov('<div class="p"><b>Pregunta '+(qi+1)+'/'+Q.length+'</b><p>'+q[0]+'</p>'+q[1].map((o,j)=>'<button class="o" onclick="qa('+j+',this)">'+o+'</button>').join("")+'</div>',1)}
+function qa(j,b){const q=Q[qi];[...O.querySelectorAll("button")].forEach(z=>z.disabled=true);if(j==q[2]){qok++;mood=1;win();b.style.background="#2ecc71"}else{mood=0;boing();b.style.background="#e74c3c"}qi++;setTimeout(qs,900)}
+// ---- final ----
+function fin(){sc="end";const pct=(res.a/10+res.b/12+res.c/6)/3,st=pct>.8?3:pct>.5?2:1;conf=[];for(let i=0;i<60;i++)conf.push({x:Math.random()*400,y:-Math.random()*600,v:80+Math.random()*120,c:"hsl("+Math.random()*360+",90%,60%)"});win();hud("","");
+ov('<div class="p"><h1>¡Nació el bebé! 🎉</h1><div style="font-size:40px">'+"⭐".repeat(st)+"☆".repeat(3-st)+'</div><p>Comida: '+res.a+'/10 · Latidos: '+res.b+'/12 · Quiz: '+res.c+'/6</p><p>¡Eres la mejor ayudante de obstetricia!</p><button onclick="menu()">🔁 Jugar otra vez</button></div>',1)}
+// ---- input ----
+let tap=null;function pos(e){const r=C.getBoundingClientRect();return[(e.clientX-r.left)*400/r.width,(e.clientY-r.top)*600/r.height]}
+C.addEventListener("pointermove",e=>{dx=Math.max(35,Math.min(365,pos(e)[0]))});
+C.addEventListener("pointerdown",e=>{dx=Math.max(35,Math.min(365,pos(e)[0]));tap=1});
+addEventListener("keydown",e=>{if(e.key=="ArrowLeft")dx=Math.max(35,dx-30);if(e.key=="ArrowRight")dx=Math.min(365,dx+30);if(e.key==" ")tap=1});
+// ---- bucle ----
+let prev=performance.now();
+function lp(n){const dt=Math.min(.05,(n-prev)/1000);prev=n;T+=dt;bg();
+if(sc=="menu"){doc(110,330,1.6,1,4);mama(290,350,1.5,1);baby(200,500,1.5)}
+if(sc=="l1"){sp-=dt;if(sp<=0){sp=Math.max(.45,.9-score*.03);const g=Math.random()<.68;items.push({x:30+Math.random()*340,y:-20,g,e:(g?GOOD:BAD)[Math.random()*(g?7:5)|0]})}
+items.forEach(i=>i.y+=(150+score*9)*dt);
+items=items.filter(i=>{if(i.y>490&&i.y<560&&Math.abs(i.x-dx)<46){if(i.g){score++;pop();mood=1;pops.push({t:"+1 ¡Rico!",x:i.x,y:i.y,l:1})}else{lives--;boing();mood=0;pops.push({t:"¡Puaj!",x:i.x,y:i.y,l:1})}hud("⭐ "+score+"/10","❤️".repeat(Math.max(0,lives)));return false}return i.y<620});
+items.forEach(i=>{x.font="38px serif";x.textAlign="center";x.fillText(i.e,i.x,i.y)});
+mama(340,110,.6,mood);doc(dx,505,1,mood,3);x.fillStyle="#d98c3f";x.fillRect(dx-30,535,60,24);x.strokeStyle="#3a2342";x.lineWidth=3;x.strokeRect(dx-30,535,60,24);
+if(score>=10){res.a=score;sc="x";win();setTimeout(l2i,500)}else if(lives<=0){res.a=score;sc="x";ov('<div class="p"><h2>¡Casi! 😅</h2><p>Atrapaste '+score+'. ¡Vuelve a intentarlo!</p><button onclick="l1()">Otra vez</button><button class="o" onclick="res.a=score;l2i()">Seguir al nivel 2</button></div>')}}
+if(sc=="l2"){const now=performance.now();if(nb<12&&now-lastB>1500){beats.push({s:now,d:0,t:0});nb++;lastB=now}
+mama(200,300,2,mood);x.save();x.translate(200,420);txt("💓",0,10,34);x.restore();
+circ(200,420,40,"rgba(255,255,255,.0)");x.strokeStyle="#fff";x.lineWidth=6;x.beginPath();x.arc(200,420,40,0,7);x.stroke();
+let done=0;beats.forEach(b=>{const el=now-b.s,r=130-el/1200*90;if(el>=1200&&!b.t){b.t=1;thump()}if(!b.d&&el>1550){b.d=2;miss++;mood=0}if(b.d)done++;if(!b.d){x.strokeStyle="#ff5c8a";x.lineWidth=8;x.beginPath();x.arc(200,420,Math.max(20,r),0,7);x.stroke()}});
+if(tap){const b=beats.find(b=>!b.d&&now-b.s>500);if(b){const r=130-(now-b.s)/1200*90;if(Math.abs(r-40)<20){b.d=1;hits++;pop();mood=1;pops.push({t:"¡Perfecto!",x:200,y:360,l:1})}else{b.d=2;miss++;boing();mood=0;pops.push({t:"¡Uy!",x:200,y:360,l:1})}}}
+hud("💓 "+hits,"Latido "+Math.min(nb,12)+"/12");
+if(nb>=12&&done>=12){sc="x";res.b=hits;ov('<div class="p"><h2>'+(hits>=8?"¡Qué ritmo! 🎶":"¡Buen intento! 💪")+'</h2><p>Acertaste '+hits+' de 12.</p><button onclick="qi0()">Siguiente: Quiz 📘</button></div>')}}
+if(sc=="q"||sc=="end"){doc(110,200,1.5,mood,5);mama(290,220,1.4,mood);if(sc=="end")baby(200,420,1.8)}
+if(sc=="end"){conf.forEach(c=>{c.y+=c.v*dt;if(c.y>620)c.y=-10;x.fillStyle=c.c;x.fillRect(c.x,c.y,8,12)})}
+pops=pops.filter(p=>{p.y-=40*dt;p.l-=dt;txt(p.t,p.x,p.y,22,"#e0447a");return p.l>0});tap=null;requestAnimationFrame(lp)}
+menu();requestAnimationFrame(lp);
+</script></body></html>
